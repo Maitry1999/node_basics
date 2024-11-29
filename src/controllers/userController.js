@@ -19,7 +19,11 @@ const registerUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = await new User({ email, password: hashedPassword }).save();
 
+        // Remove password field before sending response
+        user.password = undefined;
+
         const token = signToken({ id: user._id });
+
         res.status(201).json(createResponse('success', 'User registered successfully', { user, token }));
     } catch (error) {
         console.error(error);
@@ -37,6 +41,9 @@ const loginUser = async (req, res) => {
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) return res.status(401).json(createResponse('error', 'Invalid credentials', null));
+
+        // Remove password field before sending response
+        user.password = undefined;
 
         const token = signToken({ id: user._id });
         res.status(200).json(createResponse('success', 'Login successful', { user, token }));

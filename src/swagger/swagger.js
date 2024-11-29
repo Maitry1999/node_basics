@@ -1,6 +1,6 @@
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
-
+require('dotenv').config();
 // Swagger configuration
 const swaggerDefinition = {
     openapi: '3.0.0',
@@ -11,7 +11,7 @@ const swaggerDefinition = {
     },
     servers: [
         {
-            url: process.env.BASE_URL || 'http://localhost:3500',  // Base URL for the API
+            url: process.env.BASE_URL || `http://localhost:${process.env.PORT || 3500}`, // Use fallback URL
         },
     ],
 };

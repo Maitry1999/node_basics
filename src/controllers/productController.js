@@ -1,4 +1,5 @@
 const Product = require('../models/Product');
+const createResponse = require('../utils/responseUtils');  // Import the response utility
 
 // Add a new product
 const addProduct = async (req, res) => {
@@ -6,32 +7,38 @@ const addProduct = async (req, res) => {
         const { name, price, category, company } = req.body;
 
         if (!name || !price || !category || !company) {
-            return res.status(400).json({
-                message: 'All fields are required (name, price, category, company)',
-            });
+            return res.status(400).json(createResponse('error', 'All fields are required (name, price, category, company)', null));
         }
 
         const product = new Product({ name, price, category, company });
         await product.save();
 
-        res.status(201).json({
-            message: 'Product added successfully',
-            product,
-        });
+        res.status(201).json(createResponse('success', 'Product added successfully', product));
     } catch (error) {
         console.error('Error adding product:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json(createResponse('error', 'Internal server error', null, error.message));
     }
 };
 
-// Get all products
+// Get all products with pagination
 const getProducts = async (req, res) => {
     try {
-        const products = await Product.find();
-        res.status(200).json(products);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const startIndex = (page - 1) * limit;
+
+        const products = await Product.find().skip(startIndex).limit(limit);
+        const totalProducts = await Product.countDocuments();
+
+        res.status(200).json(createResponse('success', 'Products fetched successfully', {
+            totalProducts,
+            currentPage: page,
+            totalPages: Math.ceil(totalProducts / limit),
+            products
+        }));
     } catch (error) {
         console.error('Error fetching products:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json(createResponse('error', 'Internal server error', null, error.message));
     }
 };
 
@@ -42,13 +49,13 @@ const getProductById = async (req, res) => {
 
         const product = await Product.findById(id);
         if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
+            return res.status(404).json(createResponse('error', 'Product not found', null));
         }
 
-        res.status(200).json(product);
+        res.status(200).json(createResponse('success', 'Product fetched successfully', product));
     } catch (error) {
         console.error('Error fetching product:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json(createResponse('error', 'Internal server error', null, error.message));
     }
 };
 
@@ -60,16 +67,13 @@ const updateProduct = async (req, res) => {
 
         const product = await Product.findByIdAndUpdate(id, updates, { new: true });
         if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
+            return res.status(404).json(createResponse('error', 'Product not found', null));
         }
 
-        res.status(200).json({
-            message: 'Product updated successfully',
-            product,
-        });
+        res.status(200).json(createResponse('success', 'Product updated successfully', product));
     } catch (error) {
         console.error('Error updating product:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json(createResponse('error', 'Internal server error', null, error.message));
     }
 };
 
@@ -80,16 +84,13 @@ const deleteProduct = async (req, res) => {
 
         const product = await Product.findByIdAndDelete(id);
         if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
+            return res.status(404).json(createResponse('error', 'Product not found', null));
         }
 
-        res.status(200).json({
-            message: 'Product deleted successfully',
-            product,
-        });
+        res.status(200).json(createResponse('success', 'Product deleted successfully', product));
     } catch (error) {
         console.error('Error deleting product:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json(createResponse('error', 'Internal server error', null, error.message));
     }
 };
 
@@ -98,5 +99,5 @@ module.exports = {
     getProducts,
     getProductById,
     updateProduct,
-    deleteProduct,
+    deleteProduct
 };

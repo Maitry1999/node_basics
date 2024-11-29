@@ -4,22 +4,25 @@ const setupSwagger = require('./swagger/swagger');  // Import Swagger setup
 const userRoutes = require('./routes/userRoutes');  // User routes
 const productRoutes = require('./routes/productRoutes');  // Product routes
 require('dotenv').config();  // Load environment variables
-
+const connectDB = require('./config/db');  // Database connection setup
 const app = express();
 
-// Middlewares
+// Middleware to enable CORS and parse JSON bodies
 app.use(cors());
 app.use(express.json());
 
-// Setup Swagger UI
+// Connect to the database
+connectDB();
+
+// Setup Swagger UI for API documentation
 setupSwagger(app);
 
 // Route definitions
-app.use('/api/users', userRoutes);
-app.use('/api/products', productRoutes);
+app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/products', productRoutes);
 
-// Default 404 error handler
-app.use((req, res, next) => {
+// Default 404 error handler for unhandled routes
+app.use((req, res) => {
     res.status(404).json({ message: 'Route not found' });
 });
 

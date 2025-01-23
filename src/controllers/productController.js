@@ -31,11 +31,12 @@ const getProducts = async (req, res) => {
         const totalProducts = await Product.countDocuments();
 
         res.status(200).json(createResponse('success', 'Products fetched successfully', {
+            products,
             totalProducts,
             currentPage: page,
             totalPages: Math.ceil(totalProducts / limit),
-            products
-        }));
+
+        },),);
     } catch (error) {
         console.error('Error fetching products:', error);
         res.status(500).json(createResponse('error', 'Internal server error', null, error.message));

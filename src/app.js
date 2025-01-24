@@ -47,7 +47,12 @@ const connectDB = require('./config/db');  // Database connection setup
 const app = express();
 
 // Middleware to enable CORS and parse JSON bodies
-app.use(cors());
+app.use(cors({
+    origin: '*', // Allow all origins
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
 // Connect to the database

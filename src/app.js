@@ -51,8 +51,8 @@ app.use(cors({
     origin: '*', // Allow all origins
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
+  }));
+  
 app.use(express.json());
 
 // Connect to the database

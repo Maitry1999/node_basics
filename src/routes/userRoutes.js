@@ -1,6 +1,6 @@
 const express = require('express');
 const { check } = require('express-validator');
-const { registerUser, loginUser } = require('../controllers/userController');
+const { registerUser, loginUser, sendOtp, verifyOtp } = require('../controllers/userController');
 
 const router = express.Router();
 
@@ -124,5 +124,91 @@ router.post('/register', [
  *         description: Internal server error
  */
 router.post('/login', loginUser);
+/**
+ * @swagger
+ * /users/send-otp:
+ *   post:
+ *     summary: Send OTP to the user's email for verification
+ *     tags: [Users]
+ *     description: Sends a 6-digit OTP to the user's email address for verification.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: The user's email address
+ *             example:
+ *               email: user@example.com
+ *     responses:
+ *       200:
+ *         description: OTP successfully sent
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Success message
+ *       400:
+ *         description: Invalid email address
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/send-otp', [
+    check('email').isEmail().withMessage('Invalid email address'),
+], sendOtp);
+
+/**
+ * @swagger
+ * /users/verify-otp:
+ *   post:
+ *     summary: Verify OTP for email verification
+ *     tags: [Users]
+ *     description: Verifies the provided OTP for email verification.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: The user's email address
+ *               otp:
+ *                 type: string
+ *                 format: numeric
+ *                 description: The OTP code sent to the user's email
+ *             example:
+ *               email: user@example.com
+ *               otp: 123456
+ *     responses:
+ *       200:
+ *         description: OTP successfully verified
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string   
+ *                   description: Success message
+ *       400:
+ *         description: Invalid email address or OTP
+ *       500:
+ *         description: Internal server error       
+ */
+
+router.post('/verify-otp', [
+    check('email').isEmail().withMessage('Invalid email address'),
+    check('otp').isNumeric().withMessage('OTP must be a numeric value'),
+], verifyOtp);
 
 module.exports = router;

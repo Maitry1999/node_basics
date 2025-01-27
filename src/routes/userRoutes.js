@@ -374,24 +374,16 @@ router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', verifyToken, updatePassword);
 // Add this route to handle the GET request for reset-password page
 router.get('/reset-password', (req, res) => {
-    const { email, otp } = req.query;
 
-    if (!email || !otp) {
-        return res.status(400).json({ message: 'Email and OTP are required' });
+
+
+    const { token } = req.query;
+
+    if (!token) {
+        return res.status(400).json({ message: 'token is required' });
     }
 
-    // Check if OTP is valid for the given email (example logic, adjust as needed)
-    OTP.findOne({ email, otp }).then(otpRecord => {
-        if (!otpRecord) {
-            return res.status(400).json({ message: 'Invalid OTP or expired OTP' });
-        }
-
-        // If OTP is valid, render the reset-password view (EJS)
-        return res.render('reset-password', { email, otp });
-    }).catch(err => {
-        console.error(err);
-        return res.status(500).json({ message: 'Server error' });
-    });
+    return res.render('reset-password', { token });
 });
 
 module.exports = router;

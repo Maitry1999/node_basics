@@ -85,45 +85,38 @@ const sendOtp = async (req, res) => {
             host: 'smtp.ethereal.email',
             port: 587,
             auth: {
-                user: 'alyson.carter46@ethereal.email',
-                pass: 'AUrQcYm3xgCzcjcp8F'
+                user: 'haskell.runolfsdottir@ethereal.email',
+                pass: '7fADdbghbpbSxufRrq'
             }
         });
 
-        // Construct the OTP verification URL
-        const otpVerificationLink = `${process.env.BASE_URL}/reset-password?email=${email}&otp=${otp}`;
+
 
         // Mail options with the OTP verification link
         const mailOptions = {
             from: 'antonette.gibson@ethereal.email',
             to: email,
-            subject: 'Reset Your Password - OTP Verification',
-            html: `
+            subject: isForgotPassword ? 'Reset Your Password - OTP Verification' : 'Email Verification - OTP Verification',
+            html: isForgotPassword ? `
                 <p>We received a request to reset your password.</p>
                 <p>Your OTP for resetting the password is <strong>${otp}</strong>.</p>
                 <p>This OTP will expire in 5 minutes.</p>
-                <p>Click the following link to verify your OTP and reset your password:</p>
-                <a href="${otpVerificationLink}">Verify OTP and Reset Password</a>
+            
+            `
+                : `
+                <p>Thank you for registering with our service.</p>
+                <p>Your OTP for email verification is <strong>${otp}</strong>.</p>
+                <p>This OTP will expire in 5 minutes.</p>
+               
             `
         };
 
         // Send email
         await transporter.sendMail(mailOptions);
 
-        // Render the EJS file if `isForgotPassword` is true
-        if (isForgotPassword) {
-            return res.render('reset-password', {
-                email,
-                otp,
-                otpVerificationLink,
-                message: 'An OTP has been sent to your email address. Please verify to reset your password.'
-            });
-        } else {
-            return res.status(200).json(createResponse('success', 'OTP sent successfully. Please check your email.', null));
-        }
 
-        // Send generic success response for email verification
-        //  res.status(200).json(createResponse('success', 'OTP sent successfully. Please check your email.', null));
+        return res.status(200).json(createResponse('success', 'OTP sent successfully. Please check your email.', null));
+
     } catch (error) {
         console.error(error);
         res.status(500).json(createResponse('error', 'Server error while sending OTP.', null, error.message));
@@ -154,19 +147,53 @@ const verifyOtp = async (req, res) => {
             return res.status(400).json(createResponse('error', 'OTP expired', null));
         }
 
-        // If OTP is valid and this is for forgot password, return a link for resetting password
+        // If OTP is valid and this is for forgot password, send a reset password link
         if (isForgotPassword) {
-            return res.status(200).json(createResponse('success', 'OTP verified successfully. Please enter a new password.', { redirectTo: '/new-password' }));
+            // Generate a JWT token for password reset
+            const resetToken = signToken({ id: user._id });
+
+            // Construct the reset password link
+            const resetPasswordLink = `${process.env.BASE_URL}/users/reset-password?token=${resetToken}`;
+
+            // Set up Nodemailer transporter
+            // Set up Nodemailer transporter
+            const transporter = nodemailer.createTransport({
+                host: 'smtp.ethereal.email',
+                port: 587,
+                auth: {
+                    user: 'haskell.runolfsdottir@ethereal.email',
+                    pass: '7fADdbghbpbSxufRrq'
+                }
+            });
+
+
+            // Mail options with the reset password link
+            const mailOptions = {
+                from: 'antonette.gibson@ethereal.email',
+                to: email,
+                subject: 'Password Reset Request',
+                html: `
+                    <p>We received a request to reset your password.</p>
+                    <p>Click the following link to reset your password:</p>
+                    <a href="${resetPasswordLink}">Reset Password</a>
+                    <p>The link will expire in 1 hour.</p>
+                `
+            };
+
+            // Send email with reset password link
+            await transporter.sendMail(mailOptions);
+
+            return res.status(200).json(createResponse('success', 'OTP verified successfully. A password reset link has been sent to your email.'));
         }
 
-        // If it's for email verification
+        // If OTP is valid for email verification
         res.status(200).json(createResponse('success', 'OTP verified successfully', null));
+
     } catch (error) {
         console.error(error);
         res.status(500).json(createResponse('error', 'Error verifying OTP', null, error.message));
     }
 };
-
 
 
 const getUser = async (req, res) => {

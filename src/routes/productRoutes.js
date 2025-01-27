@@ -6,7 +6,7 @@ const {
     updateProduct,
     deleteProduct
 } = require('../controllers/productController');
-
+const { signToken, verifyToken } = require('../config/jwt');
 const router = express.Router();
 
 /**
@@ -60,6 +60,8 @@ const router = express.Router();
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/Product'
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       201:
  *         description: Product added successfully
@@ -71,8 +73,10 @@ const router = express.Router();
  *         description: Invalid input
  *       500:
  *         description: Internal server error
+ *       401:
+ *         description: Unauthorized
  */
-router.post('/', addProduct);
+router.post('/', verifyToken, addProduct);
 
 /**
  * @swagger
@@ -94,6 +98,8 @@ router.post('/', addProduct);
  *           type: integer
  *           default: 10
  *         description: The number of products to fetch per page.
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Paginated list of products
@@ -117,9 +123,11 @@ router.post('/', addProduct);
  *                     $ref: '#/components/schemas/Product'
  *       500:
  *         description: Internal server error
+ *       401:
+ *         description: Unauthorized
  */
 
-router.get('/', getProducts);
+router.get('/', verifyToken, getProducts);
 
 /**
  * @swagger
@@ -135,6 +143,8 @@ router.get('/', getProducts);
  *           type: string
  *         required: true
  *         description: The product ID
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Product details
@@ -146,8 +156,10 @@ router.get('/', getProducts);
  *         description: Product not found
  *       500:
  *         description: Internal server error
+ *       401:
+ *         description: Unauthorized
  */
-router.get('/:id', getProductById);
+router.get('/:id', verifyToken, getProductById);
 
 /**
  * @swagger
@@ -156,6 +168,8 @@ router.get('/:id', getProductById);
  *     summary: Update a product by ID
  *     tags: [Products]
  *     description: Updates a product's details using its ID.
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -180,8 +194,10 @@ router.get('/:id', getProductById);
  *         description: Product not found
  *       500:
  *         description: Internal server error
+ *       401:
+ *         description: Unauthorized
  */
-router.put('/:id', updateProduct);
+router.put('/:id', verifyToken, updateProduct);
 
 /**
  * @swagger
@@ -197,6 +213,8 @@ router.put('/:id', updateProduct);
  *           type: string
  *         required: true
  *         description: The product ID
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Product deleted successfully
@@ -204,7 +222,9 @@ router.put('/:id', updateProduct);
  *         description: Product not found
  *       500:
  *         description: Internal server error
+ *       401:
+ *         description: Unauthorized
  */
-router.delete('/:id', deleteProduct);
+router.delete('/:id', verifyToken, deleteProduct);
 
 module.exports = router;

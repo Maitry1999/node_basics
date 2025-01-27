@@ -1,6 +1,7 @@
 const Product = require('../models/Product');
 const createResponse = require('../utils/responseUtils');  // Import the response utility
 
+
 // Add a new product
 const addProduct = async (req, res) => {
     try {

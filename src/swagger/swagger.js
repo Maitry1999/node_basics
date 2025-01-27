@@ -9,11 +9,27 @@ const swaggerDefinition = {
         version: '1.0.0',         // API Version
         description: 'This is the API documentation for managing users, products, and authentication in an e-commerce platform.',
     },
+
     servers: [
         {
             url: process.env.BASE_URL || `http://localhost:${process.env.PORT || 3500}`, // Use fallback URL
         },
     ],
+
+    components: {
+        securitySchemes: {
+            bearerAuth: {
+                type: 'http',
+                scheme: 'bearer',
+                bearerFormat: 'JWT', // Indicating the use of JWT tokens
+            },
+        },
+    },
+    // security: [
+    //     {
+    //         bearerAuth: [], // Global authorization applied to all routes unless specified otherwise
+    //     },
+    // ],
 };
 
 // Options for swagger-jsdoc

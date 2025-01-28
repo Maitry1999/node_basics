@@ -124,7 +124,17 @@ router.post('/register', [
  *         description: Internal server error
  */
 router.post('/login', loginUser);
+const conditionalVerifyToken = (req, res, next) => {
+    const { isForgotPassword } = req.body;
 
+    if (isForgotPassword) {
+        // Skip verifyToken if isForgotPassword is true
+        return next();
+    }
+
+    // Otherwise, call verifyToken middleware
+    verifyToken(req, res, next);
+};
 /**
  * @swagger
  * /users/send-otp:
@@ -169,7 +179,7 @@ router.post('/login', loginUser);
  *       401:
  *         description: Unauthorized
  */
-router.post('/send-otp', verifyToken, [
+router.post('/send-otp', conditionalVerifyToken, [
     check('email').isEmail().withMessage('Invalid email address'),
 ], sendOtp);
 

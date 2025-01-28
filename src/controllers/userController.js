@@ -34,6 +34,8 @@ const registerUser = async (req, res) => {
         await sendOtp(req, res);
 
         // Remove password field before sending response
+        user.tokens = undefined;
+
         user.password = undefined;
 
         // Respond with message indicating OTP sent and token
@@ -69,6 +71,7 @@ const loginUser = async (req, res) => {
         await user.save();
 
         // Remove password field before sending response
+        user.tokens = undefined;
         user.password = undefined;
 
         // Respond with login success message, user data, and token

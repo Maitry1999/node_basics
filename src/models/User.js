@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false, // Default is false meaning the email is not verified
     },
+    tokens: [{ type: String }],
 });
 
 module.exports = mongoose.model('User', userSchema);

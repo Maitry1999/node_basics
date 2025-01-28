@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const createResponse = require('../utils/responseUtils');
 const jwtKey = process.env.JWT_SECRET;
 
 const signToken = (payload) => jwt.sign(payload, jwtKey,);
@@ -12,7 +13,7 @@ const verifyToken = async (req, res, next) => {
 
     // If the 'Authorization' header is missing, return an error
     if (!authHeader) {
-        return res.status(401).json({ message: 'Authorization header is missing' });
+        return res.status(401).json(createResponse('error', 'Unauthorized', null, 'Missing Authorization header'));
     }
 
     // Extract the token from the 'Authorization' header (expected format: 'Bearer <token>')
@@ -27,7 +28,7 @@ const verifyToken = async (req, res, next) => {
 
         // Check if the token exists in the user's tokens array
         if (!user || !user.tokens.includes(token)) {
-            return res.status(403).json({ message: 'Invalid or expired token' });
+            return res.status(403).json(createResponse('error', 'Unauthorized', null, 'Invalid token'));
         }
 
         // Attach the decoded user data to the request object for further use
@@ -38,7 +39,7 @@ const verifyToken = async (req, res, next) => {
     } catch (err) {
         // If there's any error (invalid token, expired token, etc.), return an error
         console.error(err);
-        return res.status(403).json({ message: 'Invalid or expired token' });
+        return res.status(403).json(createResponse('error', 'Unauthorized', null, 'Invalid token'));
     }
 };
 

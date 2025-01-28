@@ -6,7 +6,7 @@ const createResponse = require('../utils/responseUtils');  // Import the respons
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const OTP = require('../models/Otp'); // Import your OTP model
-
+const conditionalVerifyToken = require('../middleware/authMiddleware');
 // Register a new user
 const registerUser = async (req, res) => {
     const errors = validationResult(req);

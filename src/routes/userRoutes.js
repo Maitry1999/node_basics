@@ -2,6 +2,7 @@ const express = require('express');
 const { check } = require('express-validator');
 const { registerUser, loginUser, sendOtp, verifyOtp, getUser, logoutUser, changePassword, forgotPassword, updatePassword } = require('../controllers/userController');
 const { signToken, verifyToken } = require('../config/jwt');
+const conditionalVerifyToken = require('../middleware/authMiddleware');
 const router = express.Router();
 
 /**
@@ -124,17 +125,7 @@ router.post('/register', [
  *         description: Internal server error
  */
 router.post('/login', loginUser);
-const conditionalVerifyToken = (req, res, next) => {
-    const { isForgotPassword } = req.body;
 
-    if (isForgotPassword) {
-        // Skip verifyToken if isForgotPassword is true
-        return next();
-    }
-
-    // Otherwise, call verifyToken middleware
-    verifyToken(req, res, next);
-};
 /**
  * @swagger
  * /users/send-otp:

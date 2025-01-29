@@ -150,8 +150,7 @@ router.post('/login', loginUser);
  *             example:
  *               email: user@example.com
  *               isForgotPassword: false
- *     security:
- *       - bearerAuth: []
+
  *     responses:
  *       200:
  *         description: OTP successfully sent
@@ -170,7 +169,9 @@ router.post('/login', loginUser);
  *       401:
  *         description: Unauthorized
  */
-router.post('/send-otp', conditionalVerifyToken, [
+
+// qdrd wufg ykle bzka
+router.post('/send-otp', [
     check('email').isEmail().withMessage('Invalid email address'),
 ], sendOtp);
 
@@ -203,8 +204,7 @@ router.post('/send-otp', conditionalVerifyToken, [
  *               email: user@example.com
  *               otp: 123456
  *               isForgotPassword: false
- *     security:
- *       - bearerAuth: []
+
  *     responses:
  *       200:
  *         description: OTP successfully verified
@@ -223,7 +223,7 @@ router.post('/send-otp', conditionalVerifyToken, [
  *       500:
  *         description: Internal server error       
  */
-router.post('/verify-otp', verifyToken, [
+router.post('/verify-otp', [
     check('email').isEmail().withMessage('Invalid email address'),
     check('otp').isNumeric().withMessage('OTP must be a numeric value'),
 ], verifyOtp);
@@ -378,6 +378,7 @@ router.get('/reset-password', (req, res) => {
 
 
 
+    //const { token } = req.query;
     const { token } = req.query;
 
     if (!token) {

@@ -157,13 +157,23 @@ const verifyOtp = async (req, res) => {
             await user.save();
         }
         const token = signToken({ id: user._id });
-        user.tokens = [token];  // Store token in user session
+        user.tokens = [token];
+        await user.save();
         res.status(200).json(createResponse('success', 'OTP verified successfully.', { user: sanitizeUser(user), token }));
     } catch (error) {
         console.error(error);
         res.status(500).json(createResponse('error', 'Error verifying OTP', null, error.message));
     }
 };
+// MONGO_URI="mongodb://localhost:27017/e-commerce"
+// PORT=3444
+// BASE_URL="http://localhost:3444/api/v1"
+// JWT_SECRET=e-commerce
+// SMTP_HOST="smtp.gmail.com"
+// SMTP_PORT=587
+// SMTP_USERNAME="maitry.netsol@gmail.com"
+// SMTP_PASSWORD="crzufdmsgujdkrdj"
+// EMAIL_FROM="maitry.netsol@gmail.com"
 
 // ---------------- Password Management ---------------- //
 

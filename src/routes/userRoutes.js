@@ -346,6 +346,8 @@ router.post('/forgot-password', forgotPassword);
  *   post:
  *     summary: Reset password for a user
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:

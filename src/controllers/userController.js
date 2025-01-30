@@ -281,30 +281,6 @@ const updatePassword = async (req, res) => {
     }
 };
 
-// const profileImageUpload = async (req, res) => {
-//     try {
-//         const user = await User.findById(req.user.id);
-//         if (!user) {
-//             return res.status(404).json(createResponse('error', 'User not found', null));
-//         }
-
-//         if (req.file) {
-//             // Generate a network-accessible URL for the uploaded profile image
-//             const imageUrl = `${req.protocol}://${req.get('host')}/uploads/profile_images/${req.file.filename}`;
-
-//             // Save the image URL in the user profile
-//             user.profileImage = imageUrl;
-//             await user.save();
-
-//             return res.status(200).json(createResponse('success', 'Profile image uploaded successfully.', { profileImage: imageUrl }));
-//         } else {
-//             return res.status(400).json(createResponse('error', 'No file uploaded.', null));
-//         }
-//     } catch (error) {
-//         console.error(error);
-//         res.status(500).json(createResponse('error', 'Error uploading profile image', null, error.message));
-//     }
-// };
 
 module.exports = {
     registerUser,

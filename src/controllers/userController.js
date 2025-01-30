@@ -231,7 +231,8 @@ const changePassword = async (req, res) => {
 
 const getUser = async (req, res) => {
     try {
-
+        req.user.tokens = undefined;
+        req.user.password = undefined;
 
         res.status(200).json(createResponse('success', 'User fetched successfully', req.user));
     } catch (error) {
@@ -241,6 +242,8 @@ const getUser = async (req, res) => {
 
 const logoutUser = async (req, res) => {
     try {
+        req.user.tokens = [];
+        await req.user.save();
         res.status(200).json(createResponse('success', 'Logout successful', null));
     } catch (error) {
         res.status(500).json(createResponse('error', 'Internal server error', null, error.message));

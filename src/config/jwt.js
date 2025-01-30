@@ -32,7 +32,7 @@ const verifyToken = async (req, res, next) => {
         }
 
         // Attach the decoded user data to the request object for further use
-        req.user = decoded;
+        req.user = user;
 
         // Proceed to the next middleware or route handler
         next();

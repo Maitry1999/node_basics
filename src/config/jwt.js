@@ -25,7 +25,7 @@ const verifyToken = async (req, res, next) => {
 
         // Find the user by the decoded user ID
         const user = await User.findById(decoded.id);
-
+        //    console.log(user);
         // Check if the token exists in the user's tokens array
         if (!user || !user.tokens.includes(token)) {
             return res.status(403).json(createResponse('error', 'Unauthorized', null, 'Invalid token'));

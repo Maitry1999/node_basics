@@ -65,16 +65,28 @@ const registerUser = async (req, res) => {
     const { email, password } = req.body;
 
     try {
+        // Check if email is already registered
         if (await User.findOne({ email })) {
             return res.status(400).json(createResponse('error', 'Email already registered', null));
         }
 
+        // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
-        const user = await new User({ email, password: hashedPassword, isVerified: false }).save();
 
+        // Prepare user object
+        const userData = { email, password: hashedPassword, isVerified: false };
 
+        // Check if profile image is uploaded
+        if (req.file) {
+            const profileImagePath = `${req.protocol}://${req.get('host')}/uploads/profile_images/${req.file.filename}`;
+            userData.profileImage = profileImagePath;
+        }
+
+        // Save user to the database
+        const user = new User(userData);
         await user.save();
 
+        // Generate and send OTP for verification
         const otp = await generateAndStoreOtp(email);
         await sendOtpEmail(email, otp, false);
 
@@ -84,6 +96,7 @@ const registerUser = async (req, res) => {
         res.status(500).json(createResponse('error', 'Server error during registration', null, error.message));
     }
 };
+
 
 // Login an existing user
 const loginUser = async (req, res) => {
@@ -218,6 +231,8 @@ const changePassword = async (req, res) => {
 
 const getUser = async (req, res) => {
     try {
+
+
         res.status(200).json(createResponse('success', 'User fetched successfully', req.user));
     } catch (error) {
         res.status(500).json(createResponse('error', 'Internal server error', null, error.message));
@@ -263,6 +278,31 @@ const updatePassword = async (req, res) => {
     }
 };
 
+// const profileImageUpload = async (req, res) => {
+//     try {
+//         const user = await User.findById(req.user.id);
+//         if (!user) {
+//             return res.status(404).json(createResponse('error', 'User not found', null));
+//         }
+
+//         if (req.file) {
+//             // Generate a network-accessible URL for the uploaded profile image
+//             const imageUrl = `${req.protocol}://${req.get('host')}/uploads/profile_images/${req.file.filename}`;
+
+//             // Save the image URL in the user profile
+//             user.profileImage = imageUrl;
+//             await user.save();
+
+//             return res.status(200).json(createResponse('success', 'Profile image uploaded successfully.', { profileImage: imageUrl }));
+//         } else {
+//             return res.status(400).json(createResponse('error', 'No file uploaded.', null));
+//         }
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json(createResponse('error', 'Error uploading profile image', null, error.message));
+//     }
+// };
+
 module.exports = {
     registerUser,
     loginUser,
@@ -273,4 +313,5 @@ module.exports = {
     changePassword,
     forgotPassword,
     updatePassword
+
 };

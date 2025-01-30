@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false, // Default is false meaning the email is not verified
     },
+    profileImage: { type: String },
     tokens: [{ type: String }],
 });
 

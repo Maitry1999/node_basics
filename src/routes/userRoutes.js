@@ -1,8 +1,9 @@
 const express = require('express');
 const { check } = require('express-validator');
-const { registerUser, loginUser, sendOtp, verifyOtp, getUser, logoutUser, changePassword, forgotPassword, updatePassword } = require('../controllers/userController');
+const { registerUser, loginUser, sendOtp, verifyOtp, getUser, logoutUser, changePassword, forgotPassword, updatePassword, profileImageUpload } = require('../controllers/userController');
 const { signToken, verifyToken } = require('../config/jwt');
 const conditionalVerifyToken = require('../middleware/authMiddleware');
+const upload = require('../file_upload/multer');
 const router = express.Router();
 
 /**
@@ -64,13 +65,30 @@ const router = express.Router();
  *   post:
  *     summary: Register a new user
  *     tags: [Users]
- *     description: Allows a new user to register by providing email, password, and password confirmation.
+ *     description: Allows a new user to register by providing email, password, password confirmation, and a mandatory profile image.
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/UserRegister'
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: User's email address
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 description: Password for the user (minimum 8 characters)
+ *               password_confirmation:
+ *                 type: string
+ *                 format: password
+ *                 description: Must match the password
+ *               profileImage:
+ *                 type: string
+ *                 format: binary
+ *                 description: Profile image file upload (mandatory)
  *     responses:
  *       201:
  *         description: User successfully registered
@@ -79,21 +97,44 @@ const router = express.Router();
  *             schema:
  *               type: object
  *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
  *                 message:
  *                   type: string
  *                   description: Registration success message
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     email:
+ *                       type: string
+ *                       example: user@example.com
+ *                     isVerified:
+ *                       type: boolean
+ *                       example: false
+ *                     profileImage:
+ *                       type: string
+ *                       example: "http://localhost:3500/uploads/profile_images/1700001234567-1234567.jpg"
  *       400:
  *         description: Validation errors or email already registered
  *       500:
  *         description: Internal server error
  */
-router.post('/register', [
+
+router.post('/register', upload.single('profileImage'), [
     check('email').isEmail().withMessage('Invalid email address'),
     check('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
     check('password_confirmation')
         .custom((value, { req }) => value === req.body.password)
         .withMessage('Passwords do not match'),
+    check('profileImage').custom((value, { req }) => {
+        if (!req.file) {
+            throw new Error('Profile image is required');
+        }
+        return true;
+    })
 ], registerUser);
+
 
 /**
  * @swagger

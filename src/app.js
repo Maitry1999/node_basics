@@ -26,6 +26,8 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, './views')); // Set the path to the views directory
 app.use(express.json());
 
+app.use('/uploads', express.static(path.join(__dirname, 'src/uploads/profile_images')));
+
 // Connect to the database
 connectDB();
 

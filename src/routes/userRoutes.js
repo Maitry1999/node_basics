@@ -133,7 +133,7 @@ router.post('/register', upload.single('profileImage'), [
         }
         return true;
     })
-], registerUser);
+], registerUser,);
 
 
 /**

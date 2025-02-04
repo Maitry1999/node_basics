@@ -312,7 +312,19 @@ const updatePassword = async (req, res) => {
     }
 };
 
+const socialLogin = (req, res, next) => {
+    const { platform } = req.query;
 
+    if (platform === 'google') {
+        // Use Google login strategy
+        passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+    } else if (platform === 'facebook') {
+        // Use Facebook login strategy
+        passport.authenticate('facebook', { scope: ['email'] })(req, res, next);
+    } else {
+        return res.status(400).json({ error: 'Invalid platform' });
+    }
+}
 module.exports = {
     registerUser,
     loginUser,
@@ -322,6 +334,7 @@ module.exports = {
     logoutUser,
     changePassword,
     forgotPassword,
-    updatePassword
+    updatePassword,
+    socialLogin
 
 };

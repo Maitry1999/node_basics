@@ -1,6 +1,6 @@
 const express = require('express');
 const { check } = require('express-validator');
-const { registerUser, loginUser, sendOtp, verifyOtp, getUser, logoutUser, changePassword, forgotPassword, updatePassword } = require('../controllers/userController');
+const { registerUser, loginUser, sendOtp, verifyOtp, getUser, logoutUser, changePassword, forgotPassword, updatePassword, socialLogin } = require('../controllers/userController');
 const { signToken, verifyToken } = require('../config/jwt');
 const passport = require('../config/passport');
 const upload = require('../file_upload/multer');
@@ -431,6 +431,57 @@ router.get('/reset-password', (req, res) => {
     return res.render('reset-password', { token });
 });
 
+/**
+ * @swagger
+ * /users/auth/social:
+ *   get:
+ *     summary: Redirect to social login page
+ *     tags: [Users]
+ *     description: Redirects to the social login page based on the platform specified in the request.
+ *     parameters:
+ *       - in: query
+ *         name: platform
+ *         required: true
+ *         description: The social platform to login with (e.g., google or facebook).
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - google
+ *             - facebook
+ *     responses:
+ *       200:
+ *         description: Successfully redirected to the social login page.
+ *       400:
+ *         description: Bad request. Invalid platform specified.
+ *       500:
+ *         description: Internal server error. Could not process the request.
+ */
 
+// Single route for social login
+router.get('/auth/social', socialLogin);
 
+// Social Login Callback Route
+router.get('/auth/social/callback', (req, res, next) => {
+    const { platform } = req.query;
+
+    if (platform === 'google') {
+        passport.authenticate('google', { failureRedirect: '/' }, async (err, user) => {
+            if (err || !user) return res.status(500).json({ error: 'Authentication failed' });
+
+            // Handle user and issue JWT or session
+            const token = signToken({ id: user._id });
+            res.status(200).json(createResponse('success', 'Google login successful', { user: sanitizeUser(user), token }));
+        })(req, res, next);
+    } else if (platform === 'facebook') {
+        passport.authenticate('facebook', { failureRedirect: '/' }, async (err, user) => {
+            if (err || !user) return res.status(500).json({ error: 'Authentication failed' });
+
+            // Handle user and issue JWT or session
+            const token = signToken({ id: user._id });
+            res.status(200).json(createResponse('success', 'Facebook login successful', { user: sanitizeUser(user), token }));
+        })(req, res, next);
+    } else {
+        return res.status(400).json({ error: 'Invalid platform' });
+    }
+});
 module.exports = router;

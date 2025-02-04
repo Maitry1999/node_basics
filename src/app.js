@@ -6,6 +6,7 @@ const productRoutes = require('./routes/productRoutes');  // Product routes
 require('dotenv').config();  // Load environment variables
 const connectDB = require('./config/db');  // Database connection setup
 const path = require('path');
+const { log } = require('console');
 
 // Initialize Express app
 const app = express();
@@ -26,7 +27,9 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, './views')); // Set the path to the views directory
 app.use(express.json());
 
-app.use('/uploads', express.static(path.join(__dirname, 'src/uploads/profile_images')));
+
+// Serve static files from the new uploads folder
+app.use('/uploads/profile_images', express.static(path.join(__dirname, 'file_upload/profile_images')));
 
 // Connect to the database
 connectDB();
@@ -46,6 +49,7 @@ app.use('/api/v1/products', productRoutes);
 
 // Default 404 error handler for unhandled routes
 app.use((req, res) => {
+    log('Route not found ', req.url);
     res.status(404).json({ message: 'Route not found' });
 });
 

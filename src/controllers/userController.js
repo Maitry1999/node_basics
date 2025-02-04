@@ -24,7 +24,7 @@ const generateAndStoreOtp = async (email) => {
 };
 
 // Function to send OTP email
-const sendOtpEmail = async (email, otp, isForgotPassword) => {
+const sendOtpEmail = async (email, otp, isForgotPassword, token) => {
     const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: process.env.SMTP_PORT,
@@ -34,17 +34,38 @@ const sendOtpEmail = async (email, otp, isForgotPassword) => {
         }
     });
 
+    // Check if the request is for password reset
+    let subject = isForgotPassword ? 'Reset Your Password - OTP Verification' : 'Email Verification - OTP Verification';
+    let htmlContent = '';
+
+    if (isForgotPassword && token !== undefined) {
+        // Generate the password reset link
+        const resetPasswordLink = `${process.env.BASE_URL}/users/reset-password?token=${token}`;  // Assuming the OTP is the reset token
+
+        // HTML content for password reset
+        htmlContent = `
+            <p>We received a request to reset your password.</p>
+            <p>Click the following link to reset your password:</p>
+            <a href="${resetPasswordLink}">Reset Password</a>
+            <p>The link will expire in 1 hour.</p>
+        `;
+    } else {
+        // HTML content for email verification OTP
+        htmlContent = `
+            <p>Thank you for registering with our service.</p>
+            <p>Your OTP is: <strong>${otp}</strong></p>
+            <p>This OTP will expire in 5 minutes.</p>
+        `;
+    }
+
     const mailOptions = {
         from: process.env.EMAIL_FROM,
         to: email,
-        subject: isForgotPassword ? 'Reset Your Password - OTP Verification' : 'Email Verification - OTP Verification',
-        html: `
-            <p>${isForgotPassword ? 'We received a request to reset your password.' : 'Thank you for registering with our service.'}</p>
-            <p>Your OTP is: <strong>${otp}</strong></p>
-            <p>This OTP will expire in 5 minutes.</p>
-        `
+        subject: subject,
+        html: htmlContent
     };
 
+    // Send email
     await transporter.sendMail(mailOptions);
 };
 
@@ -141,7 +162,17 @@ const sendOtp = async (req, res) => {
         }
 
         const otp = await generateAndStoreOtp(email);
-        await sendOtpEmail(email, otp, isForgotPassword);
+        if (isForgotPassword) {
+            const user = await User.findOne({ email });
+            const token = signToken({ id: user._id });
+            user.tokens = [token];
+            await user.save();
+            await sendOtpEmail(email, otp, isForgotPassword, token);
+
+        } else {
+            await sendOtpEmail(email, otp, isForgotPassword);
+        }
+
 
         res.status(200).json(createResponse('success', 'OTP sent successfully.', null));
     } catch (error) {

@@ -7,7 +7,7 @@ require('dotenv').config();  // Load environment variables
 const connectDB = require('./config/db');  // Database connection setup
 const path = require('path');
 const { log } = require('console');
-
+const passport = require('./config/passport');
 // Initialize Express app
 const app = express();
 
@@ -21,7 +21,7 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
+app.use(passport.initialize());
 // Set up EJS as the view engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, './views')); // Set the path to the views directory
@@ -57,7 +57,7 @@ app.use((req, res) => {
 const port = process.env.PORT || 3500;  // Use the port from the environment variables, default to 3500
 const host = '0.0.0.0';  // Ensure the server listens on all interfaces
 
-app.listen(port, host, () => {
+app.listen(port, () => {
     console.log(`Server is running on ${BASE_URL}`);
 });
 

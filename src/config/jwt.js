@@ -2,46 +2,11 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const createResponse = require('../utils/responseUtils');
 const jwtKey = process.env.JWT_SECRET;
-
+const passport = require('../config/passport');
 const signToken = (payload) => jwt.sign(payload, jwtKey,);
 
 
-
-const verifyToken = async (req, res, next) => {
-    // Extract the 'Authorization' header from the request
-    const authHeader = req.headers['authorization'];
-
-    // If the 'Authorization' header is missing, return an error
-    if (!authHeader) {
-        return res.status(401).json(createResponse('error', 'Unauthorized', null, 'Missing Authorization header'));
-    }
-
-    // Extract the token from the 'Authorization' header (expected format: 'Bearer <token>')
-    const token = authHeader.split(' ')[1];
-
-    try {
-        // Decode the token using jwt.verify
-        const decoded = jwt.verify(token, jwtKey);
-
-        // Find the user by the decoded user ID
-        const user = await User.findById(decoded.id);
-        //    console.log(user);
-        // Check if the token exists in the user's tokens array
-        if (!user || !user.tokens.includes(token)) {
-            return res.status(403).json(createResponse('error', 'Unauthorized', null, 'Invalid token'));
-        }
-
-        // Attach the decoded user data to the request object for further use
-        req.user = user;
-
-        // Proceed to the next middleware or route handler
-        next();
-    } catch (err) {
-        // If there's any error (invalid token, expired token, etc.), return an error
-        console.error(err);
-        return res.status(403).json(createResponse('error', 'Unauthorized', null, 'Invalid token'));
-    }
-};
+const verifyToken = passport.authenticate('jwt', { session: false });
 
 
 

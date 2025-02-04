@@ -2,7 +2,7 @@ const express = require('express');
 const { check } = require('express-validator');
 const { registerUser, loginUser, sendOtp, verifyOtp, getUser, logoutUser, changePassword, forgotPassword, updatePassword } = require('../controllers/userController');
 const { signToken, verifyToken } = require('../config/jwt');
-const conditionalVerifyToken = require('../middleware/authMiddleware');
+const passport = require('../config/passport');
 const upload = require('../file_upload/multer');
 const router = express.Router();
 
@@ -430,5 +430,7 @@ router.get('/reset-password', (req, res) => {
 
     return res.render('reset-password', { token });
 });
+
+
 
 module.exports = router;

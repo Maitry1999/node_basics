@@ -6,7 +6,7 @@ const createResponse = require('../utils/responseUtils');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const OTP = require('../models/Otp');
-
+const passport = require('../config/passport');
 // ---------------- Utility Functions ---------------- //
 
 // Function to generate and store OTP
@@ -120,35 +120,35 @@ const registerUser = async (req, res) => {
 
 
 // Login an existing user
-const loginUser = async (req, res) => {
-    const { email, password } = req.body;
-
-    try {
-        const user = await User.findOne({ email });
-        if (!user) return res.status(404).json(createResponse('error', 'User not found', null));
-
-        // Check if the user is verified
-        if (!user.isVerified) {
-            // If not verified, only return user data (without token)
-            return res.status(400).json(createResponse('error', 'Please verify your email first', { user: sanitizeUser(user) }));
+const loginUser = (req, res, next) => {
+    passport.authenticate('local', async (err, user, info) => {
+        if (err) {
+            return res.status(500).json(createResponse('error', 'Server error', null, err.message));
+        }
+        if (!user) {
+            return res.status(401).json(createResponse('error', info.message, null));
         }
 
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) return res.status(401).json(createResponse('error', 'Invalid credentials', null));
+        try {
+            // Check if the user is verified
+            if (!user.isVerified) {
+                // If not verified, return user data (without token)
+                return res.status(400).json(createResponse('error', 'Please verify your email first', { user: sanitizeUser(user) }));
+            }
 
-        // If the user is verified, generate and share token
-        const token = signToken({ id: user._id });
-        user.tokens.push(token);  // Store the token in user's tokens array
-        await user.save();
+            // Generate JWT token
+            const token = signToken({ id: user._id });
+            user.tokens.push(token);  // Store the token in user's tokens array
+            await user.save();
 
-        // Return user data with the token if verified
-        res.status(200).json(createResponse('success', 'Login successful', { user: sanitizeUser(user), token }));
-    } catch (error) {
-        console.error(error);
-        res.status(500).json(createResponse('error', 'Server error', null, error.message));
-    }
+            // Return user data with the token
+            res.status(200).json(createResponse('success', 'Login successful', { user: sanitizeUser(user), token }));
+        } catch (error) {
+            console.error(error);
+            res.status(500).json(createResponse('error', 'Server error', null, error.message));
+        }
+    })(req, res, next);  // Call passport authenticate manually
 };
-
 
 // ---------------- OTP Handling ---------------- //
 

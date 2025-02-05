@@ -6,7 +6,8 @@ const createResponse = require('../utils/responseUtils');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const OTP = require('../models/Otp');
-const passport = require('../config/passport');
+const { OAuth2Client } = require('google-auth-library');
+const passport = require('../config/passport'); const axios = require('axios');
 // ---------------- Utility Functions ---------------- //
 
 // Function to generate and store OTP
@@ -209,15 +210,6 @@ const verifyOtp = async (req, res) => {
         res.status(500).json(createResponse('error', 'Error verifying OTP', null, error.message));
     }
 };
-// MONGO_URI="mongodb://localhost:27017/e-commerce"
-// PORT=3444
-// BASE_URL="http://localhost:3444/api/v1"
-// JWT_SECRET=e-commerce
-// SMTP_HOST="smtp.gmail.com"
-// SMTP_PORT=587
-// SMTP_USERNAME="maitry.netsol@gmail.com"
-// SMTP_PASSWORD="crzufdmsgujdkrdj"
-// EMAIL_FROM="maitry.netsol@gmail.com"
 
 // ---------------- Password Management ---------------- //
 
@@ -312,12 +304,55 @@ const updatePassword = async (req, res) => {
     }
 };
 
-const socialLogin = (req, res, next) => {
+const socialLogin = async (req, res) => {
     const { platform } = req.query;
-
+    const { token } = req.body;
     if (platform === 'google') {
-        // Use Google login strategy
-        passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+        const CLIENT_ID = process.env.GOOGLE_CLIENT_ID; // Replace with your actual Google Client ID
+        console.log(CLIENT_ID);
+
+        const client = new OAuth2Client(CLIENT_ID);
+        try {
+
+            const response = await axios.get(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
+            console.log(response.data);
+
+            const ticket = await client.verifyIdToken({
+                idToken: token,
+                audience: CLIENT_ID,
+            });
+
+            const payload = ticket.getPayload(); // Extract user information
+            console.log(payload);
+
+            const { email, name, picture } = payload;
+
+            // Check if the user already exists in your database using the Google ID.
+            let existingUser = await User.findOne({ googleId: payload.sub });
+
+            if (existingUser) {
+                // User exists, issue token and return the existing user
+                const token = signToken({ id: existingUser._id });
+                existingUser.tokens = [token];
+                await existingUser.save();
+                return res.status(200).json(createResponse('success', 'User logged in successfully.', { user: sanitizeUser(existingUser), token }));
+            } else {
+                // User doesn't exist, create a new user
+                const newUser = new User({
+                    name,
+                    email,
+                    googleId: payload.sub,
+                    profileImage: picture,
+                });
+                const token = signToken({ id: newUser._id });
+                newUser.tokens = [token];
+                await newUser.save();
+                return res.status(200).json(createResponse('success', 'User logged in successfully.', { user: sanitizeUser(newUser), token }));
+            }
+        } catch (error) {
+            console.error('Error verifying Google token:', error);
+            return res.status(500).json(createResponse('error', 'Error verifying Google token', null));
+        }
     } else if (platform === 'facebook') {
         // Use Facebook login strategy
         passport.authenticate('facebook', { scope: ['email'] })(req, res, next);
@@ -325,6 +360,20 @@ const socialLogin = (req, res, next) => {
         return res.status(400).json({ error: 'Invalid platform' });
     }
 }
+
+
+const googleLoginCallback = (req, res, next) => {
+
+    passport.authenticate(
+        'google',
+        {
+            scope: ['profile', 'email'],
+
+        },
+
+    )(req, res, next);
+};
+
 module.exports = {
     registerUser,
     loginUser,
@@ -335,6 +384,7 @@ module.exports = {
     changePassword,
     forgotPassword,
     updatePassword,
-    socialLogin
+    socialLogin,
+    googleLoginCallback,
 
 };

@@ -36,49 +36,21 @@ passport.use(new LocalStrategy({
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: `${process.env.BASE_URL}/auth/google/callback`
-}, async (accessToken, refreshToken, profile, done) => {
-    try {
-        // Check if the user already exists
-        const existingUser = await User.findOne({ googleId: profile.id });
-        if (existingUser) {
-            return done(null, existingUser);
-        }
-
-        // Create a new user
-        const user = new User({
-            googleId: profile.id,
-            name: profile.displayName,
-            email: profile.emails[0].value,
-            profileImage: profile.photos[0].value
-        });
-        await user.save();
-        return done(null, user);
-    } catch (error) {
-        return done(error);
+    callbackURL: `${process.env.BASE_URL}/users/auth/google/callback`
+},
+    (accessToken, refreshToken, profile, done) => {
+        console.log(accessToken, refreshToken, profile);
+        
+        return done(null, profile);
     }
-}));
-
+));
 passport.use(new FacebookStrategy({
     clientID: process.env.FACEBOOK_CLIENT_ID,
     clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
     callbackURL: `${process.env.BASE_URL}/auth/facebook/callback`
 }, async (accessToken, refreshToken, profile, done) => {
     try {
-        // Check if the user already exists
-        const existingUser = await User.findOne({ facebookId: profile.id });
-        if (existingUser) {
-            return done(null, existingUser);
-        }
 
-        // Create a new user
-        const user = new User({
-            facebookId: profile.id,
-            name: profile.displayName,
-            email: profile.emails[0].value,
-            profileImage: profile.photos[0].value
-        });
-        await user.save();
         return done(null, user);
     } catch (error) {
         return done(error);

@@ -1,8 +1,10 @@
 const express = require('express');
 const { check } = require('express-validator');
-const { registerUser, loginUser, sendOtp, verifyOtp, getUser, logoutUser, changePassword, forgotPassword, updatePassword, socialLogin } = require('../controllers/userController');
+const { registerUser, loginUser, sendOtp, verifyOtp, getUser, logoutUser, changePassword, forgotPassword, updatePassword, socialLogin, googleLoginCallback } = require('../controllers/userController');
 const { signToken, verifyToken } = require('../config/jwt');
-const passport = require('../config/passport');
+// const passport = require('../config/passport');
+
+const passport = require('passport');
 const upload = require('../file_upload/multer');
 const router = express.Router();
 
@@ -434,54 +436,97 @@ router.get('/reset-password', (req, res) => {
 /**
  * @swagger
  * /users/auth/social:
- *   get:
- *     summary: Redirect to social login page
+ *   post:
+ *     summary: Authenticate user via social login
  *     tags: [Users]
- *     description: Redirects to the social login page based on the platform specified in the request.
+ *     description: Authenticates a user using a social login token from Google or Facebook.
  *     parameters:
  *       - in: query
  *         name: platform
  *         required: true
- *         description: The social platform to login with (e.g., google or facebook).
+ *         description: The social platform used for login (e.g., google or facebook).
  *         schema:
  *           type: string
  *           enum:
  *             - google
  *             - facebook
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: The authentication token received from the social provider.
  *     responses:
  *       200:
- *         description: Successfully redirected to the social login page.
+ *         description: Successfully authenticated user.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Google login successful
+ *                 user:
+ *                   type: object
+ *                   description: The authenticated user's details.
+ *                 jwtToken:
+ *                   type: string
+ *                   description: The JWT token issued for session authentication.
  *       400:
- *         description: Bad request. Invalid platform specified.
+ *         description: Bad request. Invalid platform or missing token.
+ *       401:
+ *         description: Unauthorized. Invalid or expired token.
  *       500:
  *         description: Internal server error. Could not process the request.
  */
 
 // Single route for social login
-router.get('/auth/social', socialLogin);
+router.post('/auth/social', socialLogin);
 
-// Social Login Callback Route
-router.get('/auth/social/callback', (req, res, next) => {
-    const { platform } = req.query;
+/** 
+ * @swagger
+ * /users/auth/social:
+ *   get:
+ *     summary: Handle Google login callback
+ *     tags: [Users]
+ *     description: Handles the callback from Google login. This route is used internally by the application and should not be accessed directly.
+ *     parameters:
+ *       - in: query
+ *         name: token
+ *         required: true
+ *         description: The authentication token received from Google.  
+ *         schema:
+ *           type: string
+ *     responses:    
+ *       200:
+ *         description: Successfully authenticated user.    
+ *       400:
+ *         description: Bad request. Invalid platform or missing token.
+ *       401:
+ *         description: Unauthorized. Invalid or expired token.
+ *       500:
+ *         description: Internal server error. Could not process the request.
+ */
 
-    if (platform === 'google') {
-        passport.authenticate('google', { failureRedirect: '/' }, async (err, user) => {
-            if (err || !user) return res.status(500).json({ error: 'Authentication failed' });
+router.get('/auth/social', googleLoginCallback);
 
-            // Handle user and issue JWT or session
-            const token = signToken({ id: user._id });
-            res.status(200).json(createResponse('success', 'Google login successful', { user: sanitizeUser(user), token }));
-        })(req, res, next);
-    } else if (platform === 'facebook') {
-        passport.authenticate('facebook', { failureRedirect: '/' }, async (err, user) => {
-            if (err || !user) return res.status(500).json({ error: 'Authentication failed' });
+router.get('/auth/google/callback', (req, res, next) => {
+    passport.authenticate('google', { scope: ['profile', 'email'] }, (err, user, info) => {
+        if (err || !user) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
 
-            // Handle user and issue JWT or session
-            const token = signToken({ id: user._id });
-            res.status(200).json(createResponse('success', 'Facebook login successful', { user: sanitizeUser(user), token }));
-        })(req, res, next);
-    } else {
-        return res.status(400).json({ error: 'Invalid platform' });
-    }
+        // Do something with the user object (e.g., send a custom response)
+        return res.status(200).json({ user });
+    })(req, res, next);
 });
+
 module.exports = router;

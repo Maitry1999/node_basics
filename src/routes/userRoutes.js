@@ -518,15 +518,4 @@ router.post('/auth/social', socialLogin);
 
 router.get('/auth/social', googleLoginCallback);
 
-router.get('/auth/google/callback', (req, res, next) => {
-    passport.authenticate('google', { scope: ['profile', 'email'] }, (err, user, info) => {
-        if (err || !user) {
-            return res.status(401).json({ message: 'Unauthorized' });
-        }
-
-        // Do something with the user object (e.g., send a custom response)
-        return res.status(200).json({ user });
-    })(req, res, next);
-});
-
 module.exports = router;

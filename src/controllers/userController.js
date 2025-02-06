@@ -308,27 +308,18 @@ const socialLogin = async (req, res) => {
     const { platform } = req.query;
     const { token } = req.body;
     if (platform === 'google') {
-        const CLIENT_ID = process.env.GOOGLE_CLIENT_ID; // Replace with your actual Google Client ID
-        console.log(CLIENT_ID);
 
-        const client = new OAuth2Client(CLIENT_ID);
         try {
 
-            const response = await axios.get(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
-            console.log(response.data);
 
-            const ticket = await client.verifyIdToken({
-                idToken: token,
-                audience: CLIENT_ID,
-            });
+            const response = await axios.get(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`);
+            const payload = response.data; // Contains user info (email, name, etc.)
 
-            const payload = ticket.getPayload(); // Extract user information
-            console.log(payload);
 
             const { email, name, picture } = payload;
 
             // Check if the user already exists in your database using the Google ID.
-            let existingUser = await User.findOne({ googleId: payload.sub });
+            let existingUser = await User.findOne({ googleId: payload.sub, });
 
             if (existingUser) {
                 // User exists, issue token and return the existing user
@@ -343,6 +334,7 @@ const socialLogin = async (req, res) => {
                     email,
                     googleId: payload.sub,
                     profileImage: picture,
+                    isVerified: payload.email_verified,
                 });
                 const token = signToken({ id: newUser._id });
                 newUser.tokens = [token];

@@ -39,8 +39,8 @@ passport.use(new GoogleStrategy({
     callbackURL: `${process.env.BASE_URL}/users/auth/google/callback`
 },
     (accessToken, refreshToken, profile, done) => {
-        console.log(accessToken, refreshToken, profile);
-        
+        console.log(accessToken);
+
         return done(null, profile);
     }
 ));

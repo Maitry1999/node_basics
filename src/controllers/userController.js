@@ -310,21 +310,28 @@ const verifySocialToken = async (platform, token) => {
     try {
         if (platform === 'google') {
             const response = await axios.get(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`);
-            return {
-                success: true,
-                data: response.data, // Contains email, name, picture, etc.
-            };
+            return { success: true, data: response.data }; // Contains email, name, picture, etc.
         } else if (platform === 'facebook') {
             const response = await axios.get(`https://graph.facebook.com/me?access_token=${token}&fields=id,name,email,picture`);
-            return {
-                success: true,
-                data: response.data, // Contains id, name, email, picture
-            };
+            if (response.data.error) {
+                return { success: false, error: 'Your token has expired. Please log in again.' };
+            }
+            return { success: true, data: response.data }; // Contains id, name, email, picture
         } else {
             return { success: false, error: 'Invalid platform' };
         }
     } catch (error) {
         console.error(`Error verifying ${platform} token:`, error);
+
+        if (error.response) {
+            // Check if the token is expired
+            const errorData = error.response.data;
+            if (error.response.status === 400) {
+                return { success: false, error: 'Your token has expired. Please log in again.' };
+            } else if (error.response.status === 401) {
+                return { success: false, error: 'Unauthorized access. Invalid or expired token.' };
+            }
+        }
         return { success: false, error: `Error verifying ${platform} token` };
     }
 };
@@ -335,7 +342,7 @@ const socialLogin = async (req, res) => {
 
     const verificationResult = await verifySocialToken(platform, token);
     if (!verificationResult.success) {
-        return res.status(500).json(createResponse('error', verificationResult.error, null));
+        return res.status(401).json(createResponse('error', verificationResult.error, null)); // 401 for expired token
     }
 
     const payload = verificationResult.data;
@@ -354,13 +361,12 @@ const socialLogin = async (req, res) => {
             const newUser = new User({
                 name,
                 email,
-
                 socialId,
                 socialPlatform: platform,
                 profileImage: platform === 'google' ? payload.picture : payload.picture.data.url,
-
                 isVerified: platform === 'google' ? payload.email_verified : true, // Google provides `email_verified`
             });
+
             const authToken = signToken({ id: newUser._id });
             newUser.tokens = [authToken];
             await newUser.save();

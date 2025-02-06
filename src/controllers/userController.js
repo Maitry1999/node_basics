@@ -304,54 +304,74 @@ const updatePassword = async (req, res) => {
     }
 };
 
+
+
+const verifySocialToken = async (platform, token) => {
+    try {
+        if (platform === 'google') {
+            const response = await axios.get(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`);
+            return {
+                success: true,
+                data: response.data, // Contains email, name, picture, etc.
+            };
+        } else if (platform === 'facebook') {
+            const response = await axios.get(`https://graph.facebook.com/me?access_token=${token}&fields=id,name,email,picture`);
+            return {
+                success: true,
+                data: response.data, // Contains id, name, email, picture
+            };
+        } else {
+            return { success: false, error: 'Invalid platform' };
+        }
+    } catch (error) {
+        console.error(`Error verifying ${platform} token:`, error);
+        return { success: false, error: `Error verifying ${platform} token` };
+    }
+};
+
 const socialLogin = async (req, res) => {
     const { platform } = req.query;
     const { token } = req.body;
-    if (platform === 'google') {
 
-        try {
-
-
-            const response = await axios.get(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`);
-            const payload = response.data; // Contains user info (email, name, etc.)
-
-
-            const { email, name, picture } = payload;
-
-            // Check if the user already exists in your database using the Google ID.
-            let existingUser = await User.findOne({ googleId: payload.sub, });
-
-            if (existingUser) {
-                // User exists, issue token and return the existing user
-                const token = signToken({ id: existingUser._id });
-                existingUser.tokens = [token];
-                await existingUser.save();
-                return res.status(200).json(createResponse('success', 'User logged in successfully.', { user: sanitizeUser(existingUser), token }));
-            } else {
-                // User doesn't exist, create a new user
-                const newUser = new User({
-                    name,
-                    email,
-                    googleId: payload.sub,
-                    profileImage: picture,
-                    isVerified: payload.email_verified,
-                });
-                const token = signToken({ id: newUser._id });
-                newUser.tokens = [token];
-                await newUser.save();
-                return res.status(200).json(createResponse('success', 'User logged in successfully.', { user: sanitizeUser(newUser), token }));
-            }
-        } catch (error) {
-            console.error('Error verifying Google token:', error);
-            return res.status(500).json(createResponse('error', 'Error verifying Google token', null));
-        }
-    } else if (platform === 'facebook') {
-        // Use Facebook login strategy
-        passport.authenticate('facebook', { scope: ['email'] })(req, res, next);
-    } else {
-        return res.status(400).json({ error: 'Invalid platform' });
+    const verificationResult = await verifySocialToken(platform, token);
+    if (!verificationResult.success) {
+        return res.status(500).json(createResponse('error', verificationResult.error, null));
     }
-}
+
+    const payload = verificationResult.data;
+    const { email, name, id } = payload;
+    const socialId = platform === 'google' ? payload.sub : id; // Use `sub` for Google, `id` for Facebook
+
+    try {
+        let existingUser = await User.findOne({ email });
+
+        if (existingUser) {
+            const authToken = signToken({ id: existingUser._id });
+            existingUser.tokens = [authToken];
+            await existingUser.save();
+            return res.status(200).json(createResponse('success', 'User logged in successfully.', { user: sanitizeUser(existingUser), token: authToken }));
+        } else {
+            const newUser = new User({
+                name,
+                email,
+
+                socialId,
+                socialPlatform: platform,
+                profileImage: platform === 'google' ? payload.picture : payload.picture.data.url,
+
+                isVerified: platform === 'google' ? payload.email_verified : true, // Google provides `email_verified`
+            });
+            const authToken = signToken({ id: newUser._id });
+            newUser.tokens = [authToken];
+            await newUser.save();
+            return res.status(200).json(createResponse('success', 'User registered and logged in successfully.', { user: sanitizeUser(newUser), token: authToken }));
+        }
+    } catch (error) {
+        console.error('Database error:', error);
+        return res.status(500).json(createResponse('error', 'Database error', null));
+    }
+};
+
 
 
 const googleLoginCallback = (req, res, next) => {

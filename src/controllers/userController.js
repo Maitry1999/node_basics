@@ -24,51 +24,96 @@ const generateAndStoreOtp = async (email) => {
     return otp;
 };
 
-// Function to send OTP email
+
+
 const sendOtpEmail = async (email, otp, isForgotPassword, token) => {
-    const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: process.env.SMTP_PORT,
-        auth: {
-            user: process.env.SMTP_USERNAME,
-            pass: process.env.SMTP_PASSWORD
+    try {
+        // Validate required environment variables
+        if (!process.env.SMTP_HOST || !process.env.SMTP_PORT || !process.env.SMTP_USERNAME || !process.env.SMTP_PASSWORD) {
+            throw new Error("SMTP configuration is missing. Check your environment variables.");
         }
-    });
 
-    // Check if the request is for password reset
-    let subject = isForgotPassword ? 'Reset Your Password - OTP Verification' : 'Email Verification - OTP Verification';
-    let htmlContent = '';
+        // Configure transporter
+        const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: process.env.SMTP_PORT,
+            secure: process.env.SMTP_PORT == 465, // Use SSL for port 465
+            auth: {
+                user: process.env.SMTP_USERNAME,
+                pass: process.env.SMTP_PASSWORD
+            }
+        });
 
-    if (isForgotPassword && token !== undefined) {
-        // Generate the password reset link
-        const resetPasswordLink = `${process.env.BASE_URL}/users/reset-password?token=${token}`;  // Assuming the OTP is the reset token
+        let subject = isForgotPassword ? 'Reset Your Password - OTP Verification' : 'Email Verification - OTP Verification';
+        let htmlContent = '';
 
-        // HTML content for password reset
-        htmlContent = `
-            <p>We received a request to reset your password.</p>
-            <p>Click the following link to reset your password:</p>
-            <a href="${resetPasswordLink}">Reset Password</a>
-            <p>The link will expire in 1 hour.</p>
+        if (isForgotPassword && token) {
+            // Generate password reset link
+            const resetPasswordLink = `${process.env.BASE_URL}/users/reset-password?token=${token}`;
+
+            // HTML template for password reset
+            htmlContent = `
+                <p>We received a request to reset your password.</p>
+                <p>Click the following link to reset your password:</p>
+                <p><a href="${resetPasswordLink}" style="color:blue;">Reset Password</a></p>
+                <p>The link will expire in 1 hour.</p>
+            `;
+        } else {
+            // HTML template for email verification OTP
+            htmlContent = `
+                <p>Thank you for registering with our service.</p>
+                <p>Your OTP is: <strong style="font-size: 18px; color: red;">${otp}</strong></p>
+                <p>This OTP will expire in 5 minutes.</p>
+            `;
+        }
+
+        const emailSignature = `
+            <br>
+            <p>Thanks & Regards,</p>
+            <p><strong>Mobile Support Team,</strong></p>
+            <p><strong>(Netsol IT Solution Pvt. Ltd)</strong></p>
+            <p><a href="https://www.netsolitsolution.com" style="color:blue;">www.netsolitsolution.com</a></p>
+            <br>
+            <table style="border:1px solid #ccc; padding:10px;">
+                <tr>
+                    <td>
+                        <img src="https://img.freepik.com/free-vector/golden-elegant-logo-with-frame_52683-13462.jpg" alt="Netsol Logo" width="100" />
+                    </td>
+                    <td>
+                        <p><strong>Netsol IT Solutions Pvt. Ltd.</strong></p>
+                        <p>Address: 212, 5th Floor SNS Interio, Behind CNG Pump,</p>
+                        <p>Bhatia Char Rasta, Surat - 395017</p>
+                        <p>Phone: +91 (261) 2228535</p>
+                        <p>Mobile: +91 85111 50276, +91 99250 48853</p>
+                        <p>Email: <a href="mailto:maitry@netsolitsolution.com">maitry@netsolitsolution.com</a></p>
+                        <p>Website: <a href="https://netsolitsolution.com" style="color:blue;">https://netsolitsolution.com</a></p>
+                    </td>
+                </tr>
+            </table>
         `;
-    } else {
-        // HTML content for email verification OTP
-        htmlContent = `
-            <p>Thank you for registering with our service.</p>
-            <p>Your OTP is: <strong>${otp}</strong></p>
-            <p>This OTP will expire in 5 minutes.</p>
-        `;
+
+        // Combine Email Content and Signature
+        htmlContent += emailSignature;
+
+        const mailOptions = {
+            from: process.env.EMAIL_FROM,
+            to: email,
+            subject: subject,
+            html: htmlContent
+        };
+
+        // Send email
+        let info = await transporter.sendMail(mailOptions);
+        console.log(`✅ Email sent successfully to ${email}: ${info.messageId}`);
+        return true;
+    } catch (error) {
+        console.error(`❌ Error sending email to ${email}:`, error.message);
+        return false;
     }
-
-    const mailOptions = {
-        from: process.env.EMAIL_FROM,
-        to: email,
-        subject: subject,
-        html: htmlContent
-    };
-
-    // Send email
-    await transporter.sendMail(mailOptions);
 };
+
+module.exports = sendOtpEmail;
+
 
 // Function to remove sensitive data from user object
 const sanitizeUser = (user) => {
@@ -324,8 +369,7 @@ const verifySocialToken = async (platform, token) => {
         console.error(`Error verifying ${platform} token:`, error);
 
         if (error.response) {
-            // Check if the token is expired
-            const errorData = error.response.data;
+
             if (error.response.status === 400) {
                 return { success: false, error: 'Your token has expired. Please log in again.' };
             } else if (error.response.status === 401) {

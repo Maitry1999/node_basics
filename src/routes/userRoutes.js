@@ -4,7 +4,7 @@ const { registerUser, loginUser, sendOtp, verifyOtp, getUser, logoutUser, change
 const { signToken, verifyToken } = require('../config/jwt');
 // const passport = require('../config/passport');
 
-const passport = require('passport');
+
 const upload = require('../file_upload/multer');
 const router = express.Router();
 

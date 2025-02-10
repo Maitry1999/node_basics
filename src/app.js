@@ -3,6 +3,7 @@ const cors = require('cors');
 const setupSwagger = require('./swagger/swagger');  // Import Swagger setup
 const userRoutes = require('./routes/userRoutes');  // User routes
 const productRoutes = require('./routes/productRoutes');  // Product routes
+const chatRoutes = require('./routes/chatRoutes');
 require('dotenv').config();  // Load environment variables
 const connectDB = require('./config/db');  // Database connection setup
 const path = require('path');
@@ -27,6 +28,7 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, './views')); // Set the path to the views directory
 app.use(express.json());
 
+app.use(express.static("./src/chat/"));
 
 // Serve static files from the new uploads folder
 app.use('/uploads/profile_images', express.static(path.join(__dirname, 'file_upload/profile_images')));
@@ -46,12 +48,18 @@ app.use((req, res, next) => {
 // Route definitions
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/products', productRoutes);
+app.use('/api/v1/chats', chatRoutes);
+
+app.use('/chats', (req, res) => {
+    res.sendFile(__dirname + '/chat/chat.html');
+});
 
 // Default 404 error handler for unhandled routes
 app.use((req, res) => {
     log('Route not found ', req.url);
     res.status(404).json({ message: 'Route not found' });
 });
+
 
 // Start the server
 const port = process.env.PORT || 3500;  // Use the port from the environment variables, default to 3500

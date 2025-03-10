@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Chat App</title>
+    <link rel="stylesheet" href="../chat/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h2>Enter Your Username</h2>
+        <input type="text" id="username" placeholder="Username">
+        <button onclick="login()">Enter Chat</button>
+    </div>
+
+    <script>
+        function login() {
+            const username = document.getElementById("username").value.trim();
+            if (username) {
+                localStorage.setItem("username", username);
+                window.location.href = `/message?username=${encodeURIComponent(username)}`;
+            } else {
+                alert("Please enter a username.");
+            }
+        }
+    </script>
+</body>
+
+</html>

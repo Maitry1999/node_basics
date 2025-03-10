@@ -51,7 +51,10 @@ app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/chats', chatRoutes);
 
 app.use('/chats', (req, res) => {
-    res.sendFile(__dirname + '/chat/chat.html');
+    res.render('chat');
+});
+app.use('/message', (req, res) => {
+    res.render('message');
 });
 
 // Default 404 error handler for unhandled routes

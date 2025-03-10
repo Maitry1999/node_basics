@@ -3,8 +3,10 @@ const Chat = require('../models/Chat');
 
 const getChats = async (req, res) => {
     try {
-        const user1 = req.user.id;
-        const { user2 } = req.params;
+
+
+        //  const user1 = req.params.user1;
+        const { user1, user2 } = req.params;
 
         const chats = await Chat.find({
             $or: [
@@ -12,6 +14,7 @@ const getChats = async (req, res) => {
                 { senderId: user2, receiverId: user1 },
             ],
         }).sort({ timestamp: 1 });
+
 
         res.json(createResponse('success', 'Chats fetched successfully', chats));
     } catch (err) {

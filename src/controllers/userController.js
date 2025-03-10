@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const OTP = require('../models/Otp');
 const { OAuth2Client } = require('google-auth-library');
 const passport = require('../config/passport'); const axios = require('axios');
+const { log } = require('console');
 // ---------------- Utility Functions ---------------- //
 
 // Function to generate and store OTP
@@ -306,7 +307,42 @@ const getUser = async (req, res) => {
     } catch (error) {
         res.status(500).json(createResponse('error', 'Internal server error', null, error.message));
     }
+}; const getAllUser = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;  // Default to page 1
+        const limit = parseInt(req.query.limit) || 10; // Default limit 10
+        const skip = (page - 1) * limit;
+
+        const currentUsername = req.query.username; // Get username from query parameters
+
+        // Find the current user by username to get their ID
+        const currentUser = await User.findOne({ _id: currentUsername });
+
+        if (!currentUser) {
+            return res.status(404).json(createResponse('error', 'User not found', null));
+        }
+
+        const totalUsers = await User.countDocuments({ _id: { $ne: currentUser._id } }); // Exclude current user
+        const users = await User.find({ _id: { $ne: currentUser._id } })
+            .skip(skip)
+            .limit(limit);
+
+        users.forEach((user) => {
+            user.password = undefined;
+            // user.tokens = undefined;
+        });
+
+        res.status(200).json(createResponse('success', 'Users fetched successfully', {
+            users,
+            currentPage: page,
+            totalPages: Math.ceil(totalUsers / limit),
+            totalUsers
+        }));
+    } catch (error) {
+        res.status(500).json(createResponse('error', 'Internal server error', null, error.message));
+    }
 };
+
 
 const logoutUser = async (req, res) => {
     try {
@@ -448,5 +484,5 @@ module.exports = {
     updatePassword,
     socialLogin,
     googleLoginCallback,
-
+    getAllUser,
 };

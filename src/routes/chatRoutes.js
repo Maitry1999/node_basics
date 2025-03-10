@@ -56,35 +56,41 @@ const router = express.Router();
 
 /**
  * @swagger
- * /chats/private/{user2}:
+ * /chats/private/{user1}/{user2}:
  *   get:
  *     summary: Get private chat messages
  *     tags: [Chat]
- *     description: Retrieve all messages between the logged-in user and another user.
+ *     description: Retrieve all messages in a private chat between two users.
  *     parameters:
  *       - in: path
- *         name: user2
+ *         name: user1
  *         required: true
- *         description: The ID of the other user in the private chat.
+ *         description: The ID of the first user in the private chat.
  *         schema:
  *           type: string
- *     security:
+ *       - in: path 
+ *         name: user2  
+ *         required: true
+ *         description: The ID of the second user in the private chat.  
+ *         schema:
+ *           type: string
+ *     security:     
  *       - bearerAuth: []
- *     responses:
+ *     responses:     
  *       200:
  *         description: List of private chat messages.
  *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
+ *           application/json:  
+ *             schema:  
+ *               type: array  
+ *               items:  
  *                 $ref: '#/components/schemas/ChatMessage'
  *       401:
  *         description: Unauthorized (Invalid or missing token).
- *       500:
+ *       500:     
  *         description: Internal Server Error.
  */
-router.get("/private/:user2", verifyToken, getChats);
+router.get("/private/:user1/:user2", getChats);
 
 /**
  * @swagger

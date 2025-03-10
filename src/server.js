@@ -3,7 +3,6 @@ const { Server } = require("socket.io");
 const PORT = process.env.PORT || 3000;
 const http = require("http");
 const Chat = require("./models/Chat");
-const Group = require("./models/Group");
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
@@ -12,18 +11,32 @@ const io = new Server(server, {
     }
 });
 
-// app.listen(PORT, () => {
-//     console.log(`Server running on port ${PORT}`);
-// });
-// Handle socket connection
+// Store user socket mappings
+const userSocketMap = {};
+
 io.on("connection", (socket) => {
     console.log(`User connected: ${socket.id}`);
 
-    // Private chat
+    // Listen for user registration
+    socket.on("register-user", (userId) => {
+        userSocketMap[userId] = socket.id; // Map user ID to socket ID
+        socket.join(userId); // User joins their own room
+        console.log(`✅ User ${userId} registered with socket ID: ${socket.id}`);
+    });
+
+    // Private chat handling
     socket.on("private-message", async ({ senderId, receiverId, message }) => {
+        console.log("📩 Private message received:", { senderId, receiverId, message });
+
+        // Save message to DB
         const chatMessage = new Chat({ senderId, receiverId, message });
         await chatMessage.save();
+
+        // Send message to the receiver's socket room
         io.to(receiverId).emit("private-message", { senderId, message });
+
+        // Also send confirmation to sender
+        io.to(senderId).emit("private-message", { senderId, message });
     });
 
     // Join a group
@@ -39,10 +52,18 @@ io.on("connection", (socket) => {
         io.to(groupId).emit("group-message", { senderId, message });
     });
 
+    // Handle disconnect
     socket.on("disconnect", () => {
-        console.log(`User disconnected: ${socket.id}`);
+        for (const userId in userSocketMap) {
+            if (userSocketMap[userId] === socket.id) {
+                delete userSocketMap[userId]; // Remove user from the map
+                console.log(`❌ User ${userId} disconnected`);
+                break;
+            }
+        }
     });
 });
+
 server.listen(4545, () => {
     console.log("🚀 Socket.io server running on http://localhost:4545");
 });

@@ -1,6 +1,6 @@
 const express = require('express');
 const { check } = require('express-validator');
-const { registerUser, loginUser, sendOtp, verifyOtp, getUser, logoutUser, changePassword, forgotPassword, updatePassword, socialLogin, googleLoginCallback } = require('../controllers/userController');
+const { registerUser, loginUser, sendOtp, verifyOtp, getUser, logoutUser, changePassword, forgotPassword, updatePassword, socialLogin, googleLoginCallback, getAllUser } = require('../controllers/userController');
 const { signToken, verifyToken } = require('../config/jwt');
 // const passport = require('../config/passport');
 
@@ -292,6 +292,64 @@ router.post('/verify-otp', [
  *         description: Internal server error
  */
 router.get('/get-user', verifyToken, getUser);
+/**
+ * @swagger
+ * /users/getAllUsers:
+ *   get:
+ *     summary: Get all users with pagination
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: The page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: The number of users per page
+ *     responses:
+ *       200:
+ *         description: List of users with pagination
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Users fetched successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     users:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/User'
+ *                     currentPage:
+ *                       type: integer
+ *                       example: 1
+ *                     totalPages:
+ *                       type: integer
+ *                       example: 5
+ *                     totalUsers:
+ *                       type: integer
+ *                       example: 50
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+
+router.get('/getAllusers', getAllUser);
 
 /**
  * @swagger
